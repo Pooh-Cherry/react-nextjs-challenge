@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+
+#######################
+# Setup node container
+#######################
+  redis:
+    container_name: challenge-app-redis
+    image: 'redis'
+  
+  server:
+    build: 
+      context: ./node-api
+      dockerfile: Dockerfile
+    container_name: challenge-app-server
+    expose:
+      - ${APP_SERVER_PORT}
+    environment:
+      API_HOST: ${API_HOST}
+      APP_SERVER_PORT: ${APP_SERVER_PORT}
+    ports:
+      - ${APP_SERVER_PORT}:${APP_SERVER_PORT}
+    volumes:
+      - ./node-api:/usr/app/node-api:consistent
+    command: "bash -c 'npm install && npm run start'"
+    tty: true
+
+######################################
+# Setup client (react, vue) container
+######################################
+  client-react:
+    build: 
+      context: ./react-ui
+      dockerfile: Dockerfile
+    container_name: challenge-app-react
+    environment:
+      - REACT_APP_PORT=${REACT_APP_PORT}
+    expose:
+      - ${REACT_APP_PORT}
+    ports:
+      - ${REACT_APP_PORT}:${REACT_APP_PORT}
+    volumes:
+      - ./react-ui/src:/usr/app/react-ui/src:consistent
+      - ./react-ui/public:/usr/app/react-ui/public:consistent
+    links:
+      - server
+    command: "bash -c 'npm install && npm run start'"
+    tty: true
+
+  client-vue:
+    build: 
+      context: ./vue-ui
+      dockerfile: Dockerfile
+    container_name: challenge-app-vue
+    environment:
+      - VUE_APP_PORT=${VUE_APP_PORT}
+    expose:
+      - ${VUE_APP_PORT}
+    ports:
+      - ${VUE_APP_PORT}:${VUE_APP_PORT}
+    volumes:
+      - ./vue-ui/src:/usr/app/vue-ui/src:consistent
+      - ./vue-ui/public:/usr/app/vue-ui/public:consistent
+    links:
+      - server
+    command: "bash -c 'npm install && npm run serve'"
+    tty: true
